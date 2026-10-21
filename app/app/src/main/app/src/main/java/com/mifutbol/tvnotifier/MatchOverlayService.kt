@@ -1,5 +1,8 @@
 package com.mifutbol.tvnotifier
 
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -12,6 +15,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
+import androidx.core.app.NotificationCompat
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -25,12 +29,43 @@ class MatchOverlayService : Service() {
     private var isRunning = false
     private val apiKey = "3"
 
+    // Memoria anti-duplicados: guarda el ID del evento y su último estado/marcador notificado
+    private val notifiedEvents = mutableMapOf<String, String>()
+
+    companion object {
+        const val CHANNEL_ID = "TvNotifierForegroundChannel"
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        createNotificationChannel()
+        
+        // Convertimos el servicio en Foreground para evitar que Android TV lo cierre
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("AlertaFutbolTV Activo")
+            .setContentText("Monitorizando eventos deportivos en segundo plano")
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .build()
+
+        startForeground(1, notification)
+
         if (!isRunning) {
             isRunning = true
             startFastPolling()
         }
         return START_STICKY
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val serviceChannel = NotificationChannel(
+                CHANNEL_ID,
+                "Canal de Servicio de Alertas TV",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(serviceChannel)
+        }
     }
 
     private fun startFastPolling() {
@@ -41,14 +76,12 @@ class MatchOverlayService : Service() {
                     val savedFavorites = prefs.getString("favorites_list", "") ?: ""
                     val targetKeywords = savedFavorites.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
 
-                    // Preferencias de alertas
                     val allowGoals = prefs.getBoolean("alert_goals", true)
                     val allowStartEnd = prefs.getBoolean("alert_start_end", true)
                     val allowPenalties = prefs.getBoolean("alert_penalties", true)
                     val allowTennisSets = prefs.getBoolean("alert_tennis_sets", true)
                     val allowWinners = prefs.getBoolean("alert_winners", true)
 
-                    // Leer la duración personalizada en segundos de esta TV específica (por defecto 5 segundos)
                     val durationStr = prefs.getString("notification_duration", "5") ?: "5"
                     val durationMillis = (durationStr.toLongOrNull() ?: 5L) * 1000L
 
@@ -67,11 +100,14 @@ class MatchOverlayService : Service() {
                             if (events != null) {
                                 for (i in 0 until events.length()) {
                                     val event = events.getJSONObject(i)
+                                    val eventId = event.optString("idEvent", i.toString())
                                     val homeTeam = event.optString("strHomeTeam", "").lowercase()
                                     val awayTeam = event.optString("strAwayTeam", "").lowercase()
                                     val eventName = event.optString("strEvent", "").lowercase()
                                     val progress = event.optString("strProgress", "")
                                     val detail = event.optString("strDetail", "")
+                                    val homeScore = event.optString("intHomeScore", "0")
+                                    val awayScore = event.optString("intAwayScore", "0")
 
                                     val isTracked = targetKeywords.any { keyword ->
                                         homeTeam.contains(keyword) || awayTeam.contains(keyword) || eventName.contains(keyword)
@@ -105,10 +141,19 @@ class MatchOverlayService : Service() {
                                         }
 
                                         if (shouldNotify) {
-                                            val title = event.optString("strEvent", "Evento Deportivo")
-                                            val score = "${event.optString("intHomeScore", "0")} - ${event.optString("intAwayScore", "0")}"
-                                            handler.post {
-                                                showOverlay(alertHeader, title, score, durationMillis)
+                                            // Clave única del estado actual del evento para evitar spam de duplicados
+                                            val stateSignature = "$progress-$homeScore-$awayScore-$detail"
+                                            val lastState = notifiedEvents[eventId]
+
+                                            if (lastState != stateSignature) {
+                                                // Es un estado nuevo, guardamos y disparamos alerta
+                                                notifiedEvents[eventId] = stateSignature
+                                                val title = event.optString("strEvent", "Evento Deportivo")
+                                                val scoreText = "$homeScore - $awayScore"
+                                                
+                                                handler.post {
+                                                    showOverlay(alertHeader, title, scoreText, durationMillis)
+                                                }
                                             }
                                         }
                                     }
@@ -160,7 +205,6 @@ class MatchOverlayService : Service() {
         overlayView = textView
         windowManager.addView(overlayView, params)
 
-        // Se oculta exactamente en los segundos que hayas configurado en la tele
         handler.postDelayed({
             removeOverlay()
         }, durationMillis)
