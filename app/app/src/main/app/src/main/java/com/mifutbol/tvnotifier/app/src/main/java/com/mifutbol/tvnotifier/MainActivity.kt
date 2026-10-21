@@ -58,6 +58,19 @@ class MainActivity : Activity() {
             setPadding(20, 20, 20, 20)
         }
 
+        // Configuración de duración en segundos
+        val descDuration = TextView(this).apply {
+            text = "Duración del aviso en pantalla (en segundos, ej: 5):"
+            textSize = 14f
+            setPadding(0, 20, 0, 10)
+        }
+        val savedDuration = prefs.getString("notification_duration", "5") ?: "5"
+        val inputDuration = EditText(this).apply {
+            setText(savedDuration)
+            textSize = 16f
+            setPadding(20, 20, 20, 20)
+        }
+
         // Secciones de Checkboxes para tipos de alertas
         val titleAlerts = TextView(this).apply {
             text = "\nSELECCIONA QUÉ ALERTAS QUIERES RECIBIR:"
@@ -93,6 +106,7 @@ class MainActivity : Activity() {
             setOnClickListener {
                 prefs.edit().apply {
                     putString("favorites_list", inputFavorites.text.toString())
+                    putString("notification_duration", inputDuration.text.toString())
                     putBoolean("alert_goals", cbGoals.isChecked)
                     putBoolean("alert_start_end", cbStartEnd.isChecked)
                     putBoolean("alert_penalties", cbPenalties.isChecked)
@@ -111,6 +125,8 @@ class MainActivity : Activity() {
         layout.addView(titleText)
         layout.addView(descText)
         layout.addView(inputFavorites)
+        layout.addView(descDuration)
+        layout.addView(inputDuration)
         layout.addView(titleAlerts)
         layout.addView(cbGoals)
         layout.addView(cbStartEnd)
