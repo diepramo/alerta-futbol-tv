@@ -41,12 +41,16 @@ class MatchOverlayService : Service() {
                     val savedFavorites = prefs.getString("favorites_list", "") ?: ""
                     val targetKeywords = savedFavorites.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
 
-                    // Preferencias de alertas de la TV
+                    // Preferencias de alertas
                     val allowGoals = prefs.getBoolean("alert_goals", true)
                     val allowStartEnd = prefs.getBoolean("alert_start_end", true)
                     val allowPenalties = prefs.getBoolean("alert_penalties", true)
                     val allowTennisSets = prefs.getBoolean("alert_tennis_sets", true)
                     val allowWinners = prefs.getBoolean("alert_winners", true)
+
+                    // Leer la duración personalizada en segundos de esta TV específica (por defecto 5 segundos)
+                    val durationStr = prefs.getString("notification_duration", "5") ?: "5"
+                    val durationMillis = (durationStr.toLongOrNull() ?: 5L) * 1000L
 
                     if (targetKeywords.isNotEmpty()) {
                         val url = URL("https://www.thesportsdb.com/api/v1/json/$apiKey/latestsoccer.php")
@@ -104,7 +108,7 @@ class MatchOverlayService : Service() {
                                             val title = event.optString("strEvent", "Evento Deportivo")
                                             val score = "${event.optString("intHomeScore", "0")} - ${event.optString("intAwayScore", "0")}"
                                             handler.post {
-                                                showOverlay(alertHeader, title, score)
+                                                showOverlay(alertHeader, title, score, durationMillis)
                                             }
                                         }
                                     }
@@ -116,13 +120,12 @@ class MatchOverlayService : Service() {
                     e.printStackTrace()
                 }
 
-                // Polling optimizado cada 20 segundos
                 Thread.sleep(20000)
             }
         }
     }
 
-    private fun showOverlay(header: String, title: String, score: String) {
+    private fun showOverlay(header: String, title: String, score: String, durationMillis: Long) {
         if (overlayView != null) return
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -157,9 +160,10 @@ class MatchOverlayService : Service() {
         overlayView = textView
         windowManager.addView(overlayView, params)
 
+        // Se oculta exactamente en los segundos que hayas configurado en la tele
         handler.postDelayed({
             removeOverlay()
-        }, 12000)
+        }, durationMillis)
     }
 
     private fun removeOverlay() {
