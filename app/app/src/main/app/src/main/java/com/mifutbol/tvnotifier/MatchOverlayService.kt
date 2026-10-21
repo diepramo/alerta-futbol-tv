@@ -9,7 +9,6 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
@@ -38,10 +37,16 @@ class MatchOverlayService : Service() {
         thread {
             while (isRunning) {
                 try {
-                    // Leer los favoritos guardados en la memoria de ESTA televisión
                     val prefs = getSharedPreferences("TV_PREFS", Context.MODE_PRIVATE)
-                    val savedFavorites = prefs.getString("favorites_list", "real madrid, alcaraz, alonso") ?: ""
+                    val savedFavorites = prefs.getString("favorites_list", "") ?: ""
                     val targetKeywords = savedFavorites.split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+
+                    // Preferencias de alertas de la TV
+                    val allowGoals = prefs.getBoolean("alert_goals", true)
+                    val allowStartEnd = prefs.getBoolean("alert_start_end", true)
+                    val allowPenalties = prefs.getBoolean("alert_penalties", true)
+                    val allowTennisSets = prefs.getBoolean("alert_tennis_sets", true)
+                    val allowWinners = prefs.getBoolean("alert_winners", true)
 
                     if (targetKeywords.isNotEmpty()) {
                         val url = URL("https://www.thesportsdb.com/api/v1/json/$apiKey/latestsoccer.php")
@@ -62,17 +67,45 @@ class MatchOverlayService : Service() {
                                     val awayTeam = event.optString("strAwayTeam", "").lowercase()
                                     val eventName = event.optString("strEvent", "").lowercase()
                                     val progress = event.optString("strProgress", "")
+                                    val detail = event.optString("strDetail", "")
 
                                     val isTracked = targetKeywords.any { keyword ->
                                         homeTeam.contains(keyword) || awayTeam.contains(keyword) || eventName.contains(keyword)
                                     }
 
-                                    if (isTracked && (progress == "Goal" || progress == "Event")) {
-                                        val title = event.optString("strEvent", "¡ALERTA EN DIRECTO!")
-                                        val score = "${event.optString("intHomeScore", "0")} - ${event.optString("intAwayScore", "0")}"
-                                        
-                                        handler.post {
-                                            showOverlay(title, score)
+                                    if (isTracked) {
+                                        var shouldNotify = false
+                                        var alertHeader = "⚡ ALERTA DEPORTIVA"
+
+                                        when {
+                                            progress == "Goal" && allowGoals -> {
+                                                shouldNotify = true
+                                                alertHeader = "⚽ ¡GOL EN DIRECTO!"
+                                            }
+                                            (progress == "1H" || progress == "FT" || progress == "Start" || progress == "Finished") && allowStartEnd -> {
+                                                shouldNotify = true
+                                                alertHeader = if (progress == "1H" || progress == "Start") "⏱️ ¡INICIO DEL EVENTO!" else "🏁 ¡EVENTO FINALIZADO!"
+                                            }
+                                            detail.contains("Penalty") && allowPenalties -> {
+                                                shouldNotify = true
+                                                alertHeader = "🔴 ¡PENALTI!"
+                                            }
+                                            progress.contains("Set") && allowTennisSets -> {
+                                                shouldNotify = true
+                                                alertHeader = "🎾 ¡SET DE TENIS!"
+                                            }
+                                            progress == "Winner" && allowWinners -> {
+                                                shouldNotify = true
+                                                alertHeader = "🏆 ¡RESULTADO FINAL!"
+                                            }
+                                        }
+
+                                        if (shouldNotify) {
+                                            val title = event.optString("strEvent", "Evento Deportivo")
+                                            val score = "${event.optString("intHomeScore", "0")} - ${event.optString("intAwayScore", "0")}"
+                                            handler.post {
+                                                showOverlay(alertHeader, title, score)
+                                            }
                                         }
                                     }
                                 }
@@ -83,13 +116,13 @@ class MatchOverlayService : Service() {
                     e.printStackTrace()
                 }
 
-                // Consulta rápida cada 20 segundos para máxima velocidad
+                // Polling optimizado cada 20 segundos
                 Thread.sleep(20000)
             }
         }
     }
 
-    private fun showOverlay(title: String, score: String) {
+    private fun showOverlay(header: String, title: String, score: String) {
         if (overlayView != null) return
 
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -114,7 +147,7 @@ class MatchOverlayService : Service() {
         }
 
         val textView = TextView(this).apply {
-            text = "⚡ GOL / EVENTO EN DIRECTO\n$title\nMarcador: $score"
+            text = "$header\n$title\nMarcador: $score"
             textSize = 18f
             setPadding(40, 30, 40, 30)
             setBackgroundColor(0xEE111111.toInt())
