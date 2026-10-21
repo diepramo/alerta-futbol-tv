@@ -1,13 +1,17 @@
 package com.mifutbol.tvnotifier
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 
 class MainActivity : Activity() {
@@ -15,62 +19,66 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
+        // Solicitar permiso de superposición en pantalla (necesario para las alertas en Android TV)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, 1234)
+        }
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(60, 60, 60, 60)
+            gravity = Gravity.CENTER
         }
 
-        val apiKeyInput = EditText(this).apply {
-            hint = "Introduce tu API Key de Football-Data.org"
-            textSize = 18f
+        val titleText = TextView(this).apply {
+            text = "⚙️ Configuración de Alertas en esta TV"
+            textSize = 22f
+            setPadding(0, 0, 0, 30)
+            gravity = Gravity.CENTER
         }
 
-        val teamIdInput = EditText(this).apply {
-            hint = "ID de tu equipo (ej: 86 para Real Madrid, 81 para Barça)"
-            textSize = 18f
+        val descriptionText = TextView(this).apply {
+            text = "Escribe tus equipos, ligas o deportistas separados por comas:"
+            textSize = 14f
+            setPadding(0, 0, 0, 15)
         }
 
-        val startButton = Button(this).apply {
-            text = "ACTIVAR ALERTAS EN SEGUNDO PLANO"
-            textSize = 18f
+        // Cargar los favoritos guardados previamente en esta tele
+        val prefs = getSharedPreferences("TV_PREFS", Context.MODE_PRIVATE)
+        val savedFavorites = prefs.getString("favorites_list", "real madrid, alcaraz, alonso") ?: ""
+
+        val inputFavorites = EditText(this).apply {
+            setText(savedFavorites)
+            textSize = 16f
+            setPadding(20, 20, 20, 20)
+        }
+
+        val btnSaveAndStart = Button(this).apply {
+            text = "GUARDAR Y ACTIVAR ALERTAS"
+            textSize = 16f
+            setPadding(20, 20, 20, 20)
             setOnClickListener {
-                val apiKey = apiKeyInput.text.toString().trim()
-                val teamId = teamIdInput.text.toString().trim()
+                val newFavorites = inputFavorites.text.toString()
+                
+                // Guardar en la memoria local de esta televisión
+                prefs.edit().putString("favorites_list", newFavorites).apply()
 
-                if (apiKey.isEmpty() || teamId.isEmpty()) {
-                    Toast.makeText(this@MainActivity, "Por favor completa todos los campos", Toast.LENGTH_SHORT).show()
-                } else {
-                    checkOverlayPermission()
-                    val serviceIntent = Intent(this@MainActivity, MatchOverlayService::class.java).apply {
-                        putExtra("API_KEY", apiKey)
-                        putExtra("TEAM_ID", teamId)
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(serviceIntent)
-                    } else {
-                        startService(serviceIntent)
-                    }
-                    Toast.makeText(this@MainActivity, "Servicio de Alertas Activado", Toast.LENGTH_LONG).show()
-                }
+                // Iniciar el servicio en segundo plano
+                val serviceIntent = Intent(this@MainActivity, MatchOverlayService::class.java)
+                startService(serviceIntent)
+
+                Toast.makeText(this@MainActivity, "¡Guardado e iniciado en esta TV!", Toast.LENGTH_LONG).show()
             }
         }
 
-        layout.addView(apiKeyInput)
-        layout.addView(teamIdInput)
-        layout.addView(startButton)
-
+        layout.addView(titleText)
+        layout.addView(descriptionText)
+        layout.addView(inputFavorites)
+        layout.addView(btnSaveAndStart)
         setContentView(layout)
-    }
-
-    private fun checkOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(this)) {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:$packageName")
-                )
-                startActivity(intent)
-            }
-        }
     }
 }
