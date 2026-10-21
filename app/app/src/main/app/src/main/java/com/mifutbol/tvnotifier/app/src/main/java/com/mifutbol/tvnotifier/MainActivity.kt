@@ -2,10 +2,8 @@ package com.mifutbol.tvnotifier
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
@@ -16,41 +14,23 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    // Diccionario de sugerencias rápidas para autocompletar en Android TV
     private val sportsSuggestions = arrayOf(
-        // Fútbol - Equipos y Jugadores
         "Real Madrid (Fútbol)", "FC Barcelona (Fútbol)", "Atlético de Madrid (Fútbol)", 
         "Sevilla FC (Fútbol)", "Real Betis (Fútbol)", "Athletic Club (Fútbol)",
         "Girona FC (Fútbol)", "Real Zaragoza (Fútbol)", "Manchester City (Fútbol)",
         "Liverpool (Fútbol)", "PSG (Fútbol)", "Bayern Munich (Fútbol)",
         "Kylian Mbappé (Fútbol)", "Vinicius Jr (Fútbol)", "Lamine Yamal (Fútbol)",
         "Jude Bellingham (Fútbol)", "Cristiano Ronaldo (Fútbol)", "Lionel Messi (Fútbol)",
-        
-        // Tenis
         "Carlos Alcaraz (Tenis)", "Rafael Nadal (Tenis)", "Jannik Sinner (Tenis)",
         "Novak Djokovic (Tenis)", "Alexander Zverev (Tenis)", "Daniil Medvedev (Tenis)",
-        
-        // Motor / F1 / MotoGP
         "Fernando Alonso (F1)", "Carlos Sainz (F1)", "Max Verstappen (F1)",
         "Lewis Hamilton (F1)", "Marc Márquez (MotoGP)", "Jorge Martín (MotoGP)",
-        
-        // Ciclismo
         "Tadej Pogačar (Ciclismo)", "Jonas Vingegaard (Ciclismo)", "Remco Evenepoel (Ciclismo)",
         "Enric Mas (Ciclismo)"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Comprobar permiso de ventana flotante
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
-            )
-            startActivity(intent)
-        }
-
         setContentView(R.layout.activity_main)
 
         val autoSearch = findViewById<AutoCompleteTextView>(R.id.autoCompleteFavorites)
@@ -63,10 +43,10 @@ class MainActivity : AppCompatActivity() {
         val chkWinners = findViewById<CheckBox>(R.id.chkWinners)
         val btnSave = findViewById<Button>(R.id.btnSave)
 
-        // Configurar adaptador de autocompletado inteligente
+        // Configuración del autocompletado
         val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sportsSuggestions)
         autoSearch.setAdapter(adapter)
-        autoSearch.threshold = 1 // Empieza a sugerir desde la primera letra
+        autoSearch.threshold = 1
 
         val prefs = getSharedPreferences("TV_PREFS", Context.MODE_PRIVATE)
         autoSearch.setText(prefs.getString("favorites_list", "Real Madrid, Carlos Alcaraz, Fernando Alonso"))
@@ -80,8 +60,6 @@ class MainActivity : AppCompatActivity() {
 
         btnSave.setOnClickListener {
             val rawInput = autoSearch.text.toString()
-            
-            // Limpiar la etiqueta del deporte antes de guardar (ej. "Carlos Alcaraz (Tenis)" -> "Carlos Alcaraz")
             val cleanFavorites = rawInput.split(",")
                 .map { item -> item.replace(Regex("\\s*\\([^)]*\\)"), "").trim() }
                 .filter { it.isNotEmpty() }
@@ -100,15 +78,19 @@ class MainActivity : AppCompatActivity() {
                 apply()
             }
 
-            // Iniciar o actualizar el servicio
+            // Iniciar servicio flotante de forma segura
             val serviceIntent = Intent(this, MatchOverlayService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
+                Toast.makeText(this, "Guardado y Activado correctamente", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(this, "Ajustes guardados", Toast.LENGTH_SHORT).show()
             }
-
-            Toast.makeText(this, "Configuración guardada activada", Toast.LENGTH_SHORT).show()
         }
     }
 }
