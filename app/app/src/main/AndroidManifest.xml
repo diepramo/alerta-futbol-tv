@@ -2,12 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mifutbol.tvnotifier">
 
-    <!-- Permisos de Internet, Ventana Flotante y Autoarranque al encender -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- Compatibilidad universal para Android TV y dispositivos sin táctil -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.faketouch" android:required="false" />
 
@@ -29,22 +26,10 @@
             </intent-filter>
         </activity>
 
-        <!-- Servicio en segundo plano para las alertas flotantes -->
         <service
             android:name=".MatchOverlayService"
             android:enabled="true"
             android:exported="false" />
-
-        <!-- Receptor para encender el servicio automáticamente cuando arranca la TV -->
-        <receiver
-            android:name=".BootReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
 
     </application>
 
