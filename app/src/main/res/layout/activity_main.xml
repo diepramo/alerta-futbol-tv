@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="#121212">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Configuración de Alertas de Fútbol"
+        android:textSize="22sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Equipos o Favoritos (separados por comas):"
+        android:textColor="#CCCCCC"
+        android:textSize="14sp"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/editFavorites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: Real Madrid, Barcelona..."
+        android:textColor="#FFFFFF"
+        android:textColorHint="#777777"
+        android:background="#2C2C2C"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Duración de la notificación (minutos):"
+        android:textColor="#CCCCCC"
+        android:textSize="14sp"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/editDuration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="5"
+        android:textColor="#FFFFFF"
+        android:textColorHint="#777777"
+        android:background="#2C2C2C"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp" />
+
+    <CheckBox
+        android:id="@+id/chkGoals"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Alertas de Goles"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/chkStartEnd"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Inicio y Fin de Partido"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/chkPenalties"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Penaltis y Tarjetas Rojas"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/chkTennisSets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sets de Tenis"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="8dp" />
+
+    <CheckBox
+        android:id="@+id/chkWinners"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ganadores de Eventos"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Guardar y Activar Servicio"
+        android:backgroundTint="#FF6200EE"
+        android:textColor="#FFFFFF"
+        android:padding="12dp" />
+
+</LinearLayout>
