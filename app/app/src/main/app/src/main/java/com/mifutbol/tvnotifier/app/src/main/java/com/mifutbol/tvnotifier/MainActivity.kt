@@ -16,10 +16,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Usamos EditText normal para evitar cierres forzosos (crashes) en Android TV
         val editFavorites = findViewById<EditText>(R.id.editFavorites)
         val editDuration = findViewById<EditText>(R.id.editDuration)
-        
         val chkGoals = findViewById<CheckBox>(R.id.chkGoals)
         val chkStartEnd = findViewById<CheckBox>(R.id.chkStartEnd)
         val chkPenalties = findViewById<CheckBox>(R.id.chkPenalties)
@@ -57,7 +55,6 @@ class MainActivity : AppCompatActivity() {
                 apply()
             }
 
-            // Iniciar servicio flotante de forma segura
             val serviceIntent = Intent(this, MatchOverlayService::class.java)
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
