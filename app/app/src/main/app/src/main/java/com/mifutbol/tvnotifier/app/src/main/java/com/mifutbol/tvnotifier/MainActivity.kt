@@ -1,5 +1,6 @@
 package com.mifutbol.tvnotifier
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -8,9 +9,8 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity() {
 
         val editFavorites = findViewById<EditText>(R.id.editFavorites)
         val editDuration = findViewById<EditText>(R.id.editDuration)
+        
         val chkGoals = findViewById<CheckBox>(R.id.chkGoals)
         val chkStartEnd = findViewById<CheckBox>(R.id.chkStartEnd)
         val chkPenalties = findViewById<CheckBox>(R.id.chkPenalties)
