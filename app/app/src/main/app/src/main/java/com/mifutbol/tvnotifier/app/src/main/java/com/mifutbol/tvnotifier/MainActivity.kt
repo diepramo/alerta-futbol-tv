@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -14,26 +12,12 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    private val sportsSuggestions = arrayOf(
-        "Real Madrid (Fútbol)", "FC Barcelona (Fútbol)", "Atlético de Madrid (Fútbol)", 
-        "Sevilla FC (Fútbol)", "Real Betis (Fútbol)", "Athletic Club (Fútbol)",
-        "Girona FC (Fútbol)", "Real Zaragoza (Fútbol)", "Manchester City (Fútbol)",
-        "Liverpool (Fútbol)", "PSG (Fútbol)", "Bayern Munich (Fútbol)",
-        "Kylian Mbappé (Fútbol)", "Vinicius Jr (Fútbol)", "Lamine Yamal (Fútbol)",
-        "Jude Bellingham (Fútbol)", "Cristiano Ronaldo (Fútbol)", "Lionel Messi (Fútbol)",
-        "Carlos Alcaraz (Tenis)", "Rafael Nadal (Tenis)", "Jannik Sinner (Tenis)",
-        "Novak Djokovic (Tenis)", "Alexander Zverev (Tenis)", "Daniil Medvedev (Tenis)",
-        "Fernando Alonso (F1)", "Carlos Sainz (F1)", "Max Verstappen (F1)",
-        "Lewis Hamilton (F1)", "Marc Márquez (MotoGP)", "Jorge Martín (MotoGP)",
-        "Tadej Pogačar (Ciclismo)", "Jonas Vingegaard (Ciclismo)", "Remco Evenepoel (Ciclismo)",
-        "Enric Mas (Ciclismo)"
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val autoSearch = findViewById<AutoCompleteTextView>(R.id.autoCompleteFavorites)
+        // Usamos EditText normal para evitar cierres forzosos (crashes) en Android TV
+        val editFavorites = findViewById<EditText>(R.id.editFavorites)
         val editDuration = findViewById<EditText>(R.id.editDuration)
         
         val chkGoals = findViewById<CheckBox>(R.id.chkGoals)
@@ -43,13 +27,8 @@ class MainActivity : AppCompatActivity() {
         val chkWinners = findViewById<CheckBox>(R.id.chkWinners)
         val btnSave = findViewById<Button>(R.id.btnSave)
 
-        // Configuración del autocompletado
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, sportsSuggestions)
-        autoSearch.setAdapter(adapter)
-        autoSearch.threshold = 1
-
         val prefs = getSharedPreferences("TV_PREFS", Context.MODE_PRIVATE)
-        autoSearch.setText(prefs.getString("favorites_list", "Real Madrid, Carlos Alcaraz, Fernando Alonso"))
+        editFavorites.setText(prefs.getString("favorites_list", "Real Madrid, Carlos Alcaraz, Fernando Alonso"))
         editDuration.setText(prefs.getString("notification_duration", "5"))
 
         chkGoals.isChecked = prefs.getBoolean("alert_goals", true)
@@ -59,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         chkWinners.isChecked = prefs.getBoolean("alert_winners", true)
 
         btnSave.setOnClickListener {
-            val rawInput = autoSearch.text.toString()
+            val rawInput = editFavorites.text.toString()
             val cleanFavorites = rawInput.split(",")
                 .map { item -> item.replace(Regex("\\s*\\([^)]*\\)"), "").trim() }
                 .filter { it.isNotEmpty() }
